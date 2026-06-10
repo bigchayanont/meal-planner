@@ -37,7 +37,6 @@ const state = {
 };
 
 let db = null;
-let hasInitializedWeek = false;
 
 function getWeekDates() {
   const today = new Date();
@@ -208,21 +207,6 @@ async function toggleAttendance(friendId, selectedMealKey) {
   await set(ref(db, `planner/attendance/${selectedMealKey}/${friendId}`), !currentValue);
 }
 
-async function ensureWeekStructure(existingAttendance = {}) {
-  const expectedAttendance = createInitialAttendance();
-  const missingEntries = Object.entries(expectedAttendance).filter(([key]) => !(key in existingAttendance));
-
-  if (!missingEntries.length) {
-    return;
-  }
-
-  const updates = {};
-  missingEntries.forEach(([key, value]) => {
-    updates[`planner/attendance/${key}`] = value;
-  });
-  await update(ref(db), updates);
-}
-
 async function seedSampleFriends() {
   const existingFriends = Object.keys(state.friends).length;
   if (existingFriends) {
@@ -304,14 +288,6 @@ async function loadFirebase() {
       state.friends = data.friends || {};
       state.attendance = { ...createInitialAttendance(), ...(data.attendance || {}) };
       render();
-
-      if (!hasInitializedWeek) {
-        hasInitializedWeek = true;
-        ensureWeekStructure(data.attendance || {}).catch((error) => {
-          console.error(error);
-          setStatus("Connected, but there was a problem preparing this week's schedule.");
-        });
-      }
     });
 
     setStatus("Connected. Everyone on the same Firebase project can view and edit live.", true);
