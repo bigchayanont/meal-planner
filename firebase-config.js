@@ -1,9 +1,10 @@
 export const firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://REPLACE_WITH_YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
-  appId: "REPLACE_WITH_YOUR_APP_ID"
+  apiKey: "AIzaSyDFO8X4PZZUa585Rp4Fx89u8Bl3mvIQlQ8",
+  authDomain: "meal-planner-dbf11.firebaseapp.com",
+  databaseURL: "https://meal-planner-dbf11-default-rtdb.firebaseio.com",
+  projectId: "meal-planner-dbf11",
+  storageBucket: "meal-planner-dbf11.firebasestorage.app",
+  messagingSenderId: "374482797553",
+  appId: "1:374482797553:web:786c02870395e260fffa50",
+  measurementId: "G-Q82RD1ZVVG"
 };
