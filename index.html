@@ -15,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260611b" />
+    <link rel="stylesheet" href="./styles.css?v=20260611c" />
   </head>
   <body>
     <div class="page-shell">
@@ -70,7 +70,13 @@
               <p class="section-kicker">Step 2</p>
               <h2>Week overview</h2>
             </div>
-            <button id="resetWeekButton" class="ghost-button" type="button">Reset attendance</button>
+            <div class="planner-actions">
+              <label class="week-picker">
+                <span>Select week</span>
+                <select id="weekSelect"></select>
+              </label>
+              <button id="resetWeekButton" class="ghost-button" type="button">Reset attendance</button>
+            </div>
           </div>
           <p class="helper-copy">
             Tap a profile inside any meal card to mark them attending. Changes sync for everyone using the same Firebase project.
@@ -88,6 +94,6 @@
       </section>
     </div>
 
-    <script type="module" src="./app.js?v=20260611b"></script>
+    <script type="module" src="./app.js?v=20260611c"></script>
   </body>
 </html>

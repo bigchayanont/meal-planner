@@ -28,33 +28,36 @@ const profileCount = document.querySelector("#profileCount");
 const syncStatus = document.querySelector("#syncStatus");
 const statusPanel = document.querySelector(".status-panel");
 const weekRange = document.querySelector("#weekRange");
+const weekSelect = document.querySelector("#weekSelect");
 const seedButton = document.querySelector("#seedButton");
 const resetWeekButton = document.querySelector("#resetWeekButton");
 
 const state = {
   friends: {},
-  attendance: {}
+  attendance: {},
+  selectedWeekStart: "",
+  weekOptions: []
 };
 
 let db = null;
 
-function getWeekDates() {
-  const today = new Date();
-  const start = new Date(today);
-  const diff = (today.getDay() + 6) % 7;
-  start.setDate(today.getDate() - diff);
+function getStartOfWeek(baseDate = new Date()) {
+  const start = new Date(baseDate);
+  const diff = (baseDate.getDay() + 6) % 7;
+  start.setDate(baseDate.getDate() - diff);
   start.setHours(0, 0, 0, 0);
+  return start;
+}
 
+function getWeekDates(weekStart = getStartOfWeek()) {
   return Array.from({ length: DAYS }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + index);
     return date;
   });
 }
 
-const weekDates = getWeekDates();
-
-function formatWeekLabel() {
+function formatWeekLabel(weekDates) {
   const first = weekDates[0];
   const last = weekDates[weekDates.length - 1];
   const formatter = new Intl.DateTimeFormat(undefined, {
@@ -75,6 +78,26 @@ function mealKey(date, meal) {
   return `${dayKey(date)}_${meal.toLowerCase()}`;
 }
 
+function getSelectedWeekDates() {
+  const fallback = getStartOfWeek();
+  const selectedStart = state.selectedWeekStart || dayKey(fallback);
+  return getWeekDates(new Date(`${selectedStart}T00:00:00`));
+}
+
+function createWeekOptions() {
+  const currentStart = getStartOfWeek();
+  return Array.from({ length: 6 }, (_, index) => {
+    const weekStart = new Date(currentStart);
+    weekStart.setDate(currentStart.getDate() + index * 7);
+    const dates = getWeekDates(weekStart);
+    const prefix = index === 0 ? "This week" : index === 1 ? "Next week" : `Week ${index + 1}`;
+    return {
+      key: dayKey(weekStart),
+      label: `${prefix} · ${formatWeekLabel(dates)}`
+    };
+  });
+}
+
 function sanitizeText(value) {
   return value.replace(/[<>]/g, "").trim();
 }
@@ -84,7 +107,7 @@ function setStatus(message, connected = false) {
   statusPanel.classList.toggle("connected", connected);
 }
 
-function createInitialAttendance() {
+function createInitialAttendance(weekDates = getSelectedWeekDates()) {
   const nextAttendance = {};
   weekDates.forEach((date) => {
     MEALS.forEach((meal) => {
@@ -92,6 +115,18 @@ function createInitialAttendance() {
     });
   });
   return nextAttendance;
+}
+
+function renderWeekSelect() {
+  weekSelect.innerHTML = state.weekOptions
+    .map(
+      (option) => `
+        <option value="${option.key}" ${option.key === state.selectedWeekStart ? "selected" : ""}>
+          ${option.label}
+        </option>
+      `
+    )
+    .join("");
 }
 
 function renderFriends() {
@@ -123,6 +158,7 @@ function renderFriends() {
 
 function renderPlanner() {
   const friendEntries = Object.entries(state.friends);
+  const weekDates = getSelectedWeekDates();
 
   plannerGrid.innerHTML = weekDates
     .map((date) => {
@@ -183,6 +219,9 @@ function renderPlanner() {
 }
 
 function render() {
+  const weekDates = getSelectedWeekDates();
+  weekRange.textContent = formatWeekLabel(weekDates);
+  renderWeekSelect();
   renderFriends();
   renderPlanner();
 }
@@ -217,7 +256,11 @@ async function seedSampleFriends() {
 }
 
 async function resetAttendance() {
-  await set(ref(db, "planner/attendance"), createInitialAttendance());
+  const updates = {};
+  Object.keys(createInitialAttendance()).forEach((key) => {
+    updates[`planner/attendance/${key}`] = {};
+  });
+  await update(ref(db), updates);
 }
 
 function bindEvents() {
@@ -266,6 +309,16 @@ function bindEvents() {
     }
   });
 
+  weekSelect.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    state.selectedWeekStart = target.value;
+    render();
+  });
+
   resetWeekButton.addEventListener("click", async () => {
     if (db) {
       await resetAttendance();
@@ -274,7 +327,9 @@ function bindEvents() {
 }
 
 async function loadFirebase() {
-  weekRange.textContent = formatWeekLabel();
+  state.weekOptions = createWeekOptions();
+  state.selectedWeekStart = state.weekOptions[0]?.key || dayKey(getStartOfWeek());
+  render();
 
   try {
     const { firebaseConfig } = await import("./firebase-config.js");

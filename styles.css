@@ -129,6 +129,31 @@ h2 {
   gap: 16px;
 }
 
+.planner-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.week-picker {
+  display: grid;
+  gap: 6px;
+  min-width: 210px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.week-picker select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+}
+
 .friend-form {
   display: grid;
   gap: 14px;
@@ -327,6 +352,11 @@ h2 {
   .panel-heading {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .planner-actions,
+  .week-picker {
+    width: 100%;
   }
 
   .planner-grid {
