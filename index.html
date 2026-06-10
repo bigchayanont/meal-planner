@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="./" />
+    <meta
+      name="description"
+      content="House Meal Planner helps friends coordinate lunch and dinner plans for the week."
+    />
+    <title>House Meal Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero-card">
+        <div>
+          <p class="eyebrow">Shared weekly planner</p>
+          <h1>House Meal Planner</h1>
+          <p class="hero-copy">
+            A simple shared board for lunch and dinner at your house. Everyone can tap in from their phone and mark when they are attending.
+          </p>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-pill">
+            <span class="stat-label">Profiles</span>
+            <strong id="profileCount">0</strong>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-label">This week</span>
+            <strong id="weekRange">Loading...</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout-grid">
+        <section class="panel controls-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">Step 1</p>
+              <h2>Your group</h2>
+            </div>
+            <button id="seedButton" class="ghost-button" type="button">Load sample friends</button>
+          </div>
+
+          <form id="friendForm" class="friend-form">
+            <label>
+              Friend name
+              <input id="friendName" name="friendName" type="text" maxlength="30" placeholder="Add a friend" required />
+            </label>
+            <label>
+              Color vibe
+              <input id="friendColor" name="friendColor" type="color" value="#ff8a5b" />
+            </label>
+            <button class="primary-button" type="submit">Add profile</button>
+          </form>
+
+          <div id="friendsList" class="friends-list"></div>
+        </section>
+
+        <section class="panel planner-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">Step 2</p>
+              <h2>Week overview</h2>
+            </div>
+            <button id="resetWeekButton" class="ghost-button" type="button">Reset attendance</button>
+          </div>
+          <p class="helper-copy">
+            Tap a profile inside any meal card to mark them attending. Changes sync for everyone using the same Firebase project.
+          </p>
+          <div id="plannerGrid" class="planner-grid"></div>
+        </section>
+      </main>
+
+      <section class="panel status-panel">
+        <div>
+          <p class="section-kicker">Connection</p>
+          <h2>Live sync status</h2>
+        </div>
+        <p id="syncStatus" class="sync-status">Checking Firebase setup...</p>
+      </section>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
