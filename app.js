@@ -37,6 +37,7 @@ const state = {
 };
 
 let db = null;
+let hasInitializedWeek = false;
 
 function getWeekDates() {
   const today = new Date();
@@ -65,7 +66,10 @@ function formatWeekLabel() {
 }
 
 function dayKey(date) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function mealKey(date, meal) {
@@ -170,7 +174,9 @@ function renderPlanner() {
           <div class="day-header">
             <strong>${label}</strong>
           </div>
-          ${mealCards}
+          <div class="day-meals">
+            ${mealCards}
+          </div>
         </section>
       `;
     })
@@ -202,8 +208,19 @@ async function toggleAttendance(friendId, selectedMealKey) {
   await set(ref(db, `planner/attendance/${selectedMealKey}/${friendId}`), !currentValue);
 }
 
-async function ensureWeekStructure() {
-  await update(ref(db, "planner/attendance"), createInitialAttendance());
+async function ensureWeekStructure(existingAttendance = {}) {
+  const expectedAttendance = createInitialAttendance();
+  const missingEntries = Object.entries(expectedAttendance).filter(([key]) => !(key in existingAttendance));
+
+  if (!missingEntries.length) {
+    return;
+  }
+
+  const updates = {};
+  missingEntries.forEach(([key, value]) => {
+    updates[`planner/attendance/${key}`] = value;
+  });
+  await update(ref(db), updates);
 }
 
 async function seedSampleFriends() {
@@ -282,13 +299,19 @@ async function loadFirebase() {
     db = getDatabase(app);
     const plannerRef = ref(db, "planner");
 
-    await ensureWeekStructure();
-
     onValue(plannerRef, (snapshot) => {
       const data = snapshot.val() || {};
       state.friends = data.friends || {};
       state.attendance = { ...createInitialAttendance(), ...(data.attendance || {}) };
       render();
+
+      if (!hasInitializedWeek) {
+        hasInitializedWeek = true;
+        ensureWeekStructure(data.attendance || {}).catch((error) => {
+          console.error(error);
+          setStatus("Connected, but there was a problem preparing this week's schedule.");
+        });
+      }
     });
 
     setStatus("Connected. Everyone on the same Firebase project can view and edit live.", true);

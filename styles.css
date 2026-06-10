@@ -228,6 +228,11 @@ h2 {
   gap: 12px;
 }
 
+.day-meals {
+  display: grid;
+  gap: 12px;
+}
+
 .day-header {
   padding: 14px;
   border-radius: 18px;
@@ -325,6 +330,44 @@ h2 {
   }
 
   .planner-grid {
-    grid-template-columns: repeat(7, minmax(180px, 1fr));
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+  }
+
+  .day-column {
+    min-width: 0;
+    padding: 14px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.58);
+    border: 1px solid rgba(84, 56, 35, 0.08);
+  }
+
+  .day-header {
+    padding: 0 0 6px;
+    background: transparent;
+    border: 0;
+  }
+
+  .day-meals {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-card {
+    border-radius: 18px;
+  }
+
+  .chip-button {
+    width: 100%;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 980px) {
+  .planner-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+
+  .day-column {
+    min-width: 0;
   }
 }
