@@ -22,6 +22,9 @@ const DAYS = 7;
 const plannerGrid = document.querySelector("#plannerGrid");
 const friendsList = document.querySelector("#friendsList");
 const friendForm = document.querySelector("#friendForm");
+const eventForm = document.querySelector("#eventForm");
+const eventSelect = document.querySelector("#eventSelect");
+const eventNameInput = document.querySelector("#eventName");
 const friendNameInput = document.querySelector("#friendName");
 const friendColorInput = document.querySelector("#friendColor");
 const profileCount = document.querySelector("#profileCount");
@@ -36,6 +39,8 @@ const seedButton = document.querySelector("#seedButton");
 const resetWeekButton = document.querySelector("#resetWeekButton");
 
 const state = {
+  events: {},
+  currentEventId: "",
   friends: {},
   attendance: {},
   selectedWeekStart: "",
@@ -45,6 +50,19 @@ const state = {
 };
 
 let db = null;
+let rootData = {};
+
+function slugifyEventName(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32) || `event-${Date.now()}`;
+}
+
+function currentEventPath() {
+  return `plannerEvents/${state.currentEventId}`;
+}
 
 function getStartOfWeek(baseDate = new Date()) {
   const start = new Date(baseDate);
@@ -110,6 +128,19 @@ function sanitizeText(value) {
 function setStatus(message, connected = false) {
   syncStatus.textContent = message;
   statusPanel.classList.toggle("connected", connected);
+}
+
+function renderEventSelect() {
+  const eventEntries = Object.entries(state.events);
+  eventSelect.innerHTML = eventEntries
+    .map(
+      ([eventId, eventInfo]) => `
+        <option value="${eventId}" ${eventId === state.currentEventId ? "selected" : ""}>
+          ${eventInfo.name}
+        </option>
+      `
+    )
+    .join("");
 }
 
 function createInitialAttendance(weekDates = getSelectedWeekDates()) {
@@ -317,6 +348,7 @@ function renderPlanner() {
 function render() {
   const weekDates = getSelectedWeekDates();
   weekRange.textContent = formatWeekLabel(weekDates);
+  renderEventSelect();
   renderWeekSelect();
   renderSummaryWeekSelect();
   renderFriends();
@@ -325,23 +357,45 @@ function render() {
 }
 
 async function addFriend(name, color) {
-  const newFriendRef = push(ref(db, "planner/friends"));
+  const newFriendRef = push(ref(db, `${currentEventPath()}/friends`));
   await set(newFriendRef, { name, color });
 }
 
 async function removeFriendProfile(friendId) {
-  await remove(ref(db, `planner/friends/${friendId}`));
+  await remove(ref(db, `${currentEventPath()}/friends/${friendId}`));
 
   const cleanup = {};
   Object.keys(state.attendance).forEach((key) => {
-    cleanup[`planner/attendance/${key}/${friendId}`] = null;
+    cleanup[`${currentEventPath()}/attendance/${key}/${friendId}`] = null;
   });
   await update(ref(db), cleanup);
 }
 
 async function toggleAttendance(friendId, selectedMealKey) {
   const currentValue = Boolean(state.attendance[selectedMealKey]?.[friendId]);
-  await set(ref(db, `planner/attendance/${selectedMealKey}/${friendId}`), !currentValue);
+  await set(ref(db, `${currentEventPath()}/attendance/${selectedMealKey}/${friendId}`), !currentValue);
+}
+
+async function createEvent(name) {
+  const eventId = slugifyEventName(name);
+  const eventExists = Boolean(state.events[eventId]);
+  if (eventExists) {
+    state.currentEventId = eventId;
+    render();
+    return;
+  }
+
+  const payload = {
+    [`plannerMeta/events/${eventId}`]: { name },
+    [`plannerEvents/${eventId}`]: {
+      name,
+      friends: {},
+      attendance: {}
+    }
+  };
+
+  await update(ref(db), payload);
+  state.currentEventId = eventId;
 }
 
 async function seedSampleFriends() {
@@ -356,12 +410,67 @@ async function seedSampleFriends() {
 async function resetAttendance() {
   const updates = {};
   Object.keys(createInitialAttendance()).forEach((key) => {
-    updates[`planner/attendance/${key}`] = {};
+    updates[`${currentEventPath()}/attendance/${key}`] = {};
   });
   await update(ref(db), updates);
 }
 
+function syncCurrentEventState(data) {
+  const eventEntries = data.plannerMeta?.events || {};
+  state.events = eventEntries;
+
+  const fallbackEventId = Object.keys(eventEntries)[0] || "";
+  if (!state.currentEventId || !eventEntries[state.currentEventId]) {
+    state.currentEventId = fallbackEventId;
+  }
+
+  const eventData = data.plannerEvents?.[state.currentEventId] || {};
+  state.friends = eventData.friends || {};
+  state.attendance = { ...createInitialAttendance(), ...(eventData.attendance || {}) };
+}
+
+async function ensureEventStructure(data) {
+  if (data.plannerMeta?.events && data.plannerEvents) {
+    return;
+  }
+
+  const legacyFriends = data.planner?.friends || {};
+  const legacyAttendance = data.planner?.attendance || {};
+  const defaultEventId = "bigs-apt";
+
+  await update(ref(db), {
+    [`plannerMeta/events/${defaultEventId}`]: { name: "Big's apt" },
+    [`plannerEvents/${defaultEventId}`]: {
+      name: "Big's apt",
+      friends: legacyFriends,
+      attendance: legacyAttendance
+    }
+  });
+}
+
 function bindEvents() {
+  eventForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const name = sanitizeText(eventNameInput.value);
+    if (!name || !db) {
+      return;
+    }
+
+    await createEvent(name);
+    eventForm.reset();
+  });
+
+  eventSelect.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    state.currentEventId = target.value;
+    syncCurrentEventState(rootData);
+    render();
+  });
+
   friendForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const name = sanitizeText(friendNameInput.value);
@@ -453,12 +562,20 @@ async function loadFirebase() {
 
     const app = initializeApp(firebaseConfig);
     db = getDatabase(app);
-    const plannerRef = ref(db, "planner");
+    const plannerRef = ref(db, "/");
 
     onValue(plannerRef, (snapshot) => {
       const data = snapshot.val() || {};
-      state.friends = data.friends || {};
-      state.attendance = { ...createInitialAttendance(), ...(data.attendance || {}) };
+      rootData = data;
+
+      if ((!data.plannerMeta?.events || !data.plannerEvents) && db) {
+        ensureEventStructure(data).catch((error) => {
+          console.error(error);
+          setStatus("Connected, but there was a problem preparing events.");
+        });
+      }
+
+      syncCurrentEventState(data);
       render();
     });
 
