@@ -416,11 +416,22 @@ async function resetAttendance() {
 }
 
 function syncCurrentEventState(data) {
-  const eventEntries = data.plannerMeta?.events || {};
-  state.events = eventEntries;
+  const metaEvents = data.plannerMeta?.events || {};
+  const eventRecords = data.plannerEvents || {};
+  const mergedEvents = { ...metaEvents };
 
-  const fallbackEventId = Object.keys(eventEntries)[0] || "";
-  if (!state.currentEventId || !eventEntries[state.currentEventId]) {
+  Object.entries(eventRecords).forEach(([eventId, eventData]) => {
+    if (!mergedEvents[eventId]) {
+      mergedEvents[eventId] = {
+        name: eventData.name || eventId
+      };
+    }
+  });
+
+  state.events = mergedEvents;
+
+  const fallbackEventId = Object.keys(mergedEvents)[0] || "";
+  if (!state.currentEventId || !mergedEvents[state.currentEventId]) {
     state.currentEventId = fallbackEventId;
   }
 
