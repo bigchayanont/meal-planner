@@ -118,6 +118,21 @@ h2 {
   align-items: start;
 }
 
+.event-panel {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.group-panel {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.planner-panel {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
 .panel {
   border-radius: var(--radius-xl);
   padding: 24px;
@@ -393,10 +408,21 @@ h2 {
 
 @media (max-width: 980px) {
   .hero-card,
-  .layout-grid,
   .status-panel {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .layout-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .event-panel,
+  .group-panel,
+  .planner-panel {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 
@@ -458,6 +484,15 @@ h2 {
   }
 
   .chip-button {
+    width: 100%;
+  }
+
+  .planner-actions {
+    align-items: stretch;
+  }
+
+  .planner-actions .ghost-button,
+  .planner-actions .primary-button {
     width: 100%;
   }
 }
