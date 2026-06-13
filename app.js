@@ -147,29 +147,33 @@ function renderSummaryWeekSelect() {
 }
 
 function buildSummaryRows() {
-  return state.summaryWeekStarts.flatMap((weekStartKey) => {
-    const weekDates = getWeekDates(new Date(`${weekStartKey}T00:00:00`));
-    return weekDates.flatMap((date) => {
-      return MEALS.map((meal) => {
-        const key = mealKey(date, meal);
-        const attendanceMap = state.attendance[key] || {};
-        const attendees = Object.entries(state.friends)
-          .filter(([friendId]) => attendanceMap[friendId])
-          .map(([, friend]) => friend.name);
+  return state.summaryWeekStarts
+    .flatMap((weekStartKey) => {
+      const weekDates = getWeekDates(new Date(`${weekStartKey}T00:00:00`));
+      return weekDates.flatMap((date) => {
+        return MEALS.map((meal) => {
+          const key = mealKey(date, meal);
+          const attendanceMap = state.attendance[key] || {};
+          const attendees = Object.entries(state.friends)
+            .filter(([friendId]) => attendanceMap[friendId])
+            .map(([, friend]) => friend.name);
 
-        return {
-          dateLabel: new Intl.DateTimeFormat(undefined, {
-            weekday: "short",
-            month: "short",
-            day: "numeric"
-          }).format(date),
-          meal,
-          attendeeNames: attendees,
-          count: attendees.length
-        };
+          return {
+            dateLabel: new Intl.DateTimeFormat(undefined, {
+              weekday: "short",
+              month: "short",
+              day: "numeric"
+            }).format(date),
+            meal,
+            attendeeNames: attendees,
+            count: attendees.length
+          };
+        });
       });
-    });
-  });
+    })
+    .filter((row) => row.count > 0)
+    .sort((left, right) => right.count - left.count || left.dateLabel.localeCompare(right.dateLabel) || left.meal.localeCompare(right.meal))
+    .slice(0, 10);
 }
 
 function renderSummary() {
@@ -194,6 +198,7 @@ function renderSummary() {
       <table class="summary-table">
         <thead>
           <tr>
+            <th class="summary-rank">Rank</th>
             <th>Date</th>
             <th>Meal</th>
             <th>Attending</th>
@@ -203,8 +208,9 @@ function renderSummary() {
         <tbody>
           ${rows
             .map(
-              (row) => `
+              (row, index) => `
                 <tr>
+                  <td class="summary-count">#${index + 1}</td>
                   <td class="summary-count">${row.dateLabel}</td>
                   <td>${row.meal}</td>
                   <td>${row.attendeeNames.length ? row.attendeeNames.join(", ") : "No one yet"}</td>
