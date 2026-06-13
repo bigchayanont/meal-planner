@@ -146,34 +146,30 @@ function renderSummaryWeekSelect() {
     .join("");
 }
 
-function getAttendanceCountForFriend(friendId, weekStartKey) {
-  const weekDates = getWeekDates(new Date(`${weekStartKey}T00:00:00`));
-  return weekDates.reduce((total, date) => {
-    return total + MEALS.reduce((mealTotal, meal) => {
-      const key = mealKey(date, meal);
-      return mealTotal + (state.attendance[key]?.[friendId] ? 1 : 0);
-    }, 0);
-  }, 0);
-}
-
 function buildSummaryRows() {
-  const friendEntries = Object.entries(state.friends);
-  return friendEntries
-    .map(([friendId, friend]) => {
-      const total = state.summaryWeekStarts.reduce((sum, weekStartKey) => {
-        return sum + getAttendanceCountForFriend(friendId, weekStartKey);
-      }, 0);
+  return state.summaryWeekStarts.flatMap((weekStartKey) => {
+    const weekDates = getWeekDates(new Date(`${weekStartKey}T00:00:00`));
+    return weekDates.flatMap((date) => {
+      return MEALS.map((meal) => {
+        const key = mealKey(date, meal);
+        const attendanceMap = state.attendance[key] || {};
+        const attendees = Object.entries(state.friends)
+          .filter(([friendId]) => attendanceMap[friendId])
+          .map(([, friend]) => friend.name);
 
-      return {
-        friendId,
-        name: friend.name,
-        color: friend.color,
-        total
-      };
-    })
-    .filter((row) => row.total > 0)
-    .sort((left, right) => right.total - left.total || left.name.localeCompare(right.name))
-    .slice(0, 10);
+        return {
+          dateLabel: new Intl.DateTimeFormat(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric"
+          }).format(date),
+          meal,
+          attendeeNames: attendees,
+          count: attendees.length
+        };
+      });
+    });
+  });
 }
 
 function renderSummary() {
@@ -198,24 +194,21 @@ function renderSummary() {
       <table class="summary-table">
         <thead>
           <tr>
-            <th class="summary-rank">Rank</th>
-            <th>Name</th>
-            <th>Attendance count</th>
+            <th>Date</th>
+            <th>Meal</th>
+            <th>Attending</th>
+            <th>Count</th>
           </tr>
         </thead>
         <tbody>
           ${rows
             .map(
-              (row, index) => `
+              (row) => `
                 <tr>
-                  <td class="summary-count">#${index + 1}</td>
-                  <td>
-                    <div class="summary-name">
-                      <span class="avatar-dot" style="background:${row.color}"></span>
-                      <strong>${row.name}</strong>
-                    </div>
-                  </td>
-                  <td class="summary-count">${row.total}</td>
+                  <td class="summary-count">${row.dateLabel}</td>
+                  <td>${row.meal}</td>
+                  <td>${row.attendeeNames.length ? row.attendeeNames.join(", ") : "No one yet"}</td>
+                  <td class="summary-count">${row.count}</td>
                 </tr>
               `
             )
