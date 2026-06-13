@@ -15,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260611c" />
+    <link rel="stylesheet" href="./styles.css?v=20260613a" />
   </head>
   <body>
     <div class="page-shell">
@@ -85,6 +85,28 @@
         </section>
       </main>
 
+      <section class="panel summary-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Step 3</p>
+            <h2>Attendance summary</h2>
+          </div>
+          <div class="planner-actions summary-actions">
+            <label class="week-picker summary-picker">
+              <span>Weeks to include</span>
+              <select id="summaryWeekSelect" multiple size="4"></select>
+            </label>
+            <button id="summarizeButton" class="primary-button" type="button">Summarize</button>
+          </div>
+        </div>
+        <p class="helper-copy">
+          Select one or more weeks, then build a ranked table from most attendance to least. The table shows up to the top 10 friends.
+        </p>
+        <div id="summaryResults" class="summary-results">
+          <p class="helper-copy">No summary yet. Choose weeks and tap Summarize.</p>
+        </div>
+      </section>
+
       <section class="panel status-panel">
         <div>
           <p class="section-kicker">Connection</p>
@@ -94,6 +116,6 @@
       </section>
     </div>
 
-    <script type="module" src="./app.js?v=20260611c"></script>
+    <script type="module" src="./app.js?v=20260613a"></script>
   </body>
 </html>

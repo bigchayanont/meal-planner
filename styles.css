@@ -154,6 +154,66 @@ h2 {
   color: var(--text);
 }
 
+.summary-picker select {
+  min-height: 132px;
+  border-radius: 18px;
+}
+
+.summary-panel {
+  margin-top: 20px;
+}
+
+.summary-actions {
+  align-items: end;
+}
+
+.summary-results {
+  margin-top: 18px;
+}
+
+.summary-table-wrap {
+  overflow-x: auto;
+  border-radius: 20px;
+  border: 1px solid rgba(84, 56, 35, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.summary-table th,
+.summary-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(84, 56, 35, 0.08);
+}
+
+.summary-table th {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.95rem;
+  background: rgba(251, 228, 213, 0.55);
+}
+
+.summary-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.summary-rank {
+  width: 72px;
+}
+
+.summary-count {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.summary-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .friend-form {
   display: grid;
   gap: 14px;
@@ -357,6 +417,10 @@ h2 {
   .planner-actions,
   .week-picker {
     width: 100%;
+  }
+
+  .summary-picker select {
+    min-height: 118px;
   }
 
   .planner-grid {

@@ -29,6 +29,9 @@ const syncStatus = document.querySelector("#syncStatus");
 const statusPanel = document.querySelector(".status-panel");
 const weekRange = document.querySelector("#weekRange");
 const weekSelect = document.querySelector("#weekSelect");
+const summaryWeekSelect = document.querySelector("#summaryWeekSelect");
+const summarizeButton = document.querySelector("#summarizeButton");
+const summaryResults = document.querySelector("#summaryResults");
 const seedButton = document.querySelector("#seedButton");
 const resetWeekButton = document.querySelector("#resetWeekButton");
 
@@ -36,7 +39,9 @@ const state = {
   friends: {},
   attendance: {},
   selectedWeekStart: "",
-  weekOptions: []
+  weekOptions: [],
+  summaryWeekStarts: [],
+  summaryGenerated: false
 };
 
 let db = null;
@@ -86,7 +91,7 @@ function getSelectedWeekDates() {
 
 function createWeekOptions() {
   const currentStart = getStartOfWeek();
-  return Array.from({ length: 6 }, (_, index) => {
+  return Array.from({ length: 12 }, (_, index) => {
     const weekStart = new Date(currentStart);
     weekStart.setDate(currentStart.getDate() + index * 7);
     const dates = getWeekDates(weekStart);
@@ -127,6 +132,98 @@ function renderWeekSelect() {
       `
     )
     .join("");
+}
+
+function renderSummaryWeekSelect() {
+  summaryWeekSelect.innerHTML = state.weekOptions
+    .map(
+      (option) => `
+        <option value="${option.key}" ${state.summaryWeekStarts.includes(option.key) ? "selected" : ""}>
+          ${option.label}
+        </option>
+      `
+    )
+    .join("");
+}
+
+function getAttendanceCountForFriend(friendId, weekStartKey) {
+  const weekDates = getWeekDates(new Date(`${weekStartKey}T00:00:00`));
+  return weekDates.reduce((total, date) => {
+    return total + MEALS.reduce((mealTotal, meal) => {
+      const key = mealKey(date, meal);
+      return mealTotal + (state.attendance[key]?.[friendId] ? 1 : 0);
+    }, 0);
+  }, 0);
+}
+
+function buildSummaryRows() {
+  const friendEntries = Object.entries(state.friends);
+  return friendEntries
+    .map(([friendId, friend]) => {
+      const total = state.summaryWeekStarts.reduce((sum, weekStartKey) => {
+        return sum + getAttendanceCountForFriend(friendId, weekStartKey);
+      }, 0);
+
+      return {
+        friendId,
+        name: friend.name,
+        color: friend.color,
+        total
+      };
+    })
+    .filter((row) => row.total > 0)
+    .sort((left, right) => right.total - left.total || left.name.localeCompare(right.name))
+    .slice(0, 10);
+}
+
+function renderSummary() {
+  if (!state.summaryGenerated) {
+    summaryResults.innerHTML = '<p class="helper-copy">No summary yet. Choose weeks and tap Summarize.</p>';
+    return;
+  }
+
+  if (!state.summaryWeekStarts.length) {
+    summaryResults.innerHTML = '<p class="helper-copy">Select at least one week to build the summary.</p>';
+    return;
+  }
+
+  const rows = buildSummaryRows();
+  if (!rows.length) {
+    summaryResults.innerHTML = '<p class="helper-copy">No attendance found for the selected weeks yet.</p>';
+    return;
+  }
+
+  summaryResults.innerHTML = `
+    <div class="summary-table-wrap">
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th class="summary-rank">Rank</th>
+            <th>Name</th>
+            <th>Attendance count</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map(
+              (row, index) => `
+                <tr>
+                  <td class="summary-count">#${index + 1}</td>
+                  <td>
+                    <div class="summary-name">
+                      <span class="avatar-dot" style="background:${row.color}"></span>
+                      <strong>${row.name}</strong>
+                    </div>
+                  </td>
+                  <td class="summary-count">${row.total}</td>
+                </tr>
+              `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function renderFriends() {
@@ -222,8 +319,10 @@ function render() {
   const weekDates = getSelectedWeekDates();
   weekRange.textContent = formatWeekLabel(weekDates);
   renderWeekSelect();
+  renderSummaryWeekSelect();
   renderFriends();
   renderPlanner();
+  renderSummary();
 }
 
 async function addFriend(name, color) {
@@ -319,8 +418,26 @@ function bindEvents() {
     render();
   });
 
+  summaryWeekSelect.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    state.summaryWeekStarts = Array.from(target.selectedOptions, (option) => option.value);
+    if (state.summaryGenerated) {
+      renderSummary();
+    }
+  });
+
+  summarizeButton.addEventListener("click", () => {
+    state.summaryGenerated = true;
+    state.summaryWeekStarts = Array.from(summaryWeekSelect.selectedOptions, (option) => option.value);
+    renderSummary();
+  });
+
   resetWeekButton.addEventListener("click", async () => {
-    if (db) {
+    if (db && window.confirm(`Reset all attendance for ${formatWeekLabel(getSelectedWeekDates())}?`)) {
       await resetAttendance();
     }
   });
@@ -329,6 +446,7 @@ function bindEvents() {
 async function loadFirebase() {
   state.weekOptions = createWeekOptions();
   state.selectedWeekStart = state.weekOptions[0]?.key || dayKey(getStartOfWeek());
+  state.summaryWeekStarts = state.weekOptions.slice(0, 1).map((option) => option.key);
   render();
 
   try {
