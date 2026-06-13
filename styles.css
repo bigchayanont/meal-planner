@@ -118,29 +118,11 @@ h2 {
   align-items: start;
 }
 
-.event-panel {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.group-panel {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.status-panel {
-  grid-column: 1;
-  grid-row: 3;
-}
-
-.planner-panel {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.summary-panel {
-  grid-column: 2;
-  grid-row: 2 / span 2;
+.sidebar-stack,
+.main-stack {
+  display: grid;
+  gap: 20px;
+  align-content: start;
 }
 
 .panel {
@@ -432,15 +414,6 @@ h2 {
   .layout-grid {
     display: grid;
     grid-template-columns: 1fr;
-  }
-
-  .event-panel,
-  .group-panel,
-  .planner-panel,
-  .summary-panel,
-  .status-panel {
-    grid-column: auto;
-    grid-row: auto;
   }
 }
 
