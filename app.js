@@ -37,6 +37,7 @@ const summarizeButton = document.querySelector("#summarizeButton");
 const summaryResults = document.querySelector("#summaryResults");
 const seedButton = document.querySelector("#seedButton");
 const resetWeekButton = document.querySelector("#resetWeekButton");
+const deleteEventButton = document.querySelector("#deleteEventButton");
 
 const state = {
   events: {},
@@ -398,6 +399,28 @@ async function createEvent(name) {
   state.currentEventId = eventId;
 }
 
+async function deleteCurrentEvent() {
+  const eventIds = Object.keys(state.events);
+  if (eventIds.length <= 1) {
+    window.alert("You need to keep at least one event.");
+    return;
+  }
+
+  const eventId = state.currentEventId;
+  const eventName = state.events[eventId]?.name || eventId;
+  const confirmed = window.confirm(`Delete "${eventName}" and all its attendance data?`);
+  if (!confirmed) {
+    return;
+  }
+
+  const nextEventId = eventIds.find((id) => id !== eventId) || "";
+  await update(ref(db), {
+    [`plannerMeta/events/${eventId}`]: null,
+    [`plannerEvents/${eventId}`]: null
+  });
+  state.currentEventId = nextEventId;
+}
+
 async function seedSampleFriends() {
   const existingFriends = Object.keys(state.friends).length;
   if (existingFriends) {
@@ -558,6 +581,12 @@ function bindEvents() {
   resetWeekButton.addEventListener("click", async () => {
     if (db && window.confirm(`Reset all attendance for ${formatWeekLabel(getSelectedWeekDates())}?`)) {
       await resetAttendance();
+    }
+  });
+
+  deleteEventButton.addEventListener("click", async () => {
+    if (db && state.currentEventId) {
+      await deleteCurrentEvent();
     }
   });
 }

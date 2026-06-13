@@ -15,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260613f" />
+    <link rel="stylesheet" href="./styles.css?v=20260613g" />
   </head>
   <body>
     <div class="page-shell">
@@ -107,39 +107,48 @@
           </p>
           <div id="plannerGrid" class="planner-grid"></div>
         </section>
-      </main>
 
-      <section class="panel summary-panel">
-        <div class="panel-heading">
+        <section class="panel summary-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">Step 3</p>
+              <h2>Attendance summary</h2>
+            </div>
+            <div class="planner-actions summary-actions">
+              <label class="week-picker summary-picker">
+                <span>Weeks to include</span>
+                <select id="summaryWeekSelect" multiple size="4"></select>
+              </label>
+              <button id="summarizeButton" class="primary-button" type="button">Summarize</button>
+            </div>
+          </div>
+          <p class="helper-copy">
+            Select one or more weeks, then build a top 10 ranking of the busiest lunch and dinner slots by attendance count.
+          </p>
+          <div id="summaryResults" class="summary-results">
+            <p class="helper-copy">No summary yet. Choose weeks and tap Summarize.</p>
+          </div>
+        </section>
+
+        <section class="panel status-panel">
           <div>
-            <p class="section-kicker">Step 3</p>
-            <h2>Attendance summary</h2>
+            <p class="section-kicker">Connection</p>
+            <h2>Live sync status</h2>
+            <p id="syncStatus" class="sync-status">Checking Firebase setup...</p>
           </div>
-          <div class="planner-actions summary-actions">
-            <label class="week-picker summary-picker">
-              <span>Weeks to include</span>
-              <select id="summaryWeekSelect" multiple size="4"></select>
-            </label>
-            <button id="summarizeButton" class="primary-button" type="button">Summarize</button>
-          </div>
-        </div>
-        <p class="helper-copy">
-          Select one or more weeks, then build a top 10 ranking of the busiest lunch and dinner slots by attendance count.
-        </p>
-        <div id="summaryResults" class="summary-results">
-          <p class="helper-copy">No summary yet. Choose weeks and tap Summarize.</p>
-        </div>
-      </section>
 
-      <section class="panel status-panel">
-        <div>
-          <p class="section-kicker">Connection</p>
-          <h2>Live sync status</h2>
-        </div>
-        <p id="syncStatus" class="sync-status">Checking Firebase setup...</p>
-      </section>
+          <div class="danger-zone">
+            <p class="section-kicker">Event tools</p>
+            <h2>Delete current event</h2>
+            <p class="helper-copy">
+              Remove the selected event and all of its friends and attendance data.
+            </p>
+            <button id="deleteEventButton" class="ghost-button danger-button" type="button">Delete event</button>
+          </div>
+        </section>
+      </main>
     </div>
 
-    <script type="module" src="./app.js?v=20260613f"></script>
+    <script type="module" src="./app.js?v=20260613g"></script>
   </body>
 </html>

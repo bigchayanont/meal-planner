@@ -128,9 +128,19 @@ h2 {
   grid-row: 2;
 }
 
+.status-panel {
+  grid-column: 1;
+  grid-row: 3;
+}
+
 .planner-panel {
   grid-column: 2;
-  grid-row: 1 / span 2;
+  grid-row: 1;
+}
+
+.summary-panel {
+  grid-column: 2;
+  grid-row: 2 / span 2;
 }
 
 .panel {
@@ -173,10 +183,6 @@ h2 {
 .summary-picker select {
   min-height: 132px;
   border-radius: 18px;
-}
-
-.summary-panel {
-  margin-top: 20px;
 }
 
 .summary-actions {
@@ -388,11 +394,21 @@ h2 {
 }
 
 .status-panel {
-  margin-top: 20px;
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: center;
+  display: grid;
+  gap: 18px;
+}
+
+.danger-zone {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 246, 239, 0.88);
+  border: 1px solid rgba(216, 95, 56, 0.14);
+}
+
+.danger-button {
+  width: 100%;
+  color: #8c2f1b;
+  border-color: rgba(140, 47, 27, 0.18);
 }
 
 .status-panel.connected .sync-status {
@@ -420,7 +436,9 @@ h2 {
 
   .event-panel,
   .group-panel,
-  .planner-panel {
+  .planner-panel,
+  .summary-panel,
+  .status-panel {
     grid-column: auto;
     grid-row: auto;
   }
