@@ -15,10 +15,10 @@
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260613h" />
+    <link rel="stylesheet" href="./styles.css?v=20260710a" />
   </head>
   <body>
-    <div class="page-shell">
+    <div class="page-shell auth-required" id="pageShell">
       <header class="hero-card">
         <div>
           <p class="eyebrow">Shared weekly planner</p>
@@ -38,6 +38,23 @@
           </div>
         </div>
       </header>
+
+      <section class="panel auth-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Secure Access</p>
+            <h2>Sign in required</h2>
+            <p id="authMessage" class="helper-copy">
+              Sign in with Google to view and edit the planner. This keeps the database off the public internet.
+            </p>
+          </div>
+          <div class="auth-actions">
+            <strong id="authUser" class="auth-user">Not signed in</strong>
+            <button id="signInButton" class="primary-button" type="button">Continue with Google</button>
+            <button id="signOutButton" class="ghost-button" type="button" hidden>Sign out</button>
+          </div>
+        </div>
+      </section>
 
       <main class="layout-grid">
         <div class="sidebar-stack">
@@ -153,6 +170,6 @@
       </main>
     </div>
 
-    <script type="module" src="./app.js?v=20260613h"></script>
+    <script type="module" src="./app.js?v=20260710a"></script>
   </body>
 </html>

@@ -1,5 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
+  getAuth,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
   getDatabase,
   onValue,
   push,
@@ -21,6 +29,7 @@ const MEALS = ["Lunch", "Dinner"];
 const DAYS = 7;
 const plannerGrid = document.querySelector("#plannerGrid");
 const friendsList = document.querySelector("#friendsList");
+const pageShell = document.querySelector("#pageShell");
 const friendForm = document.querySelector("#friendForm");
 const eventForm = document.querySelector("#eventForm");
 const eventSelect = document.querySelector("#eventSelect");
@@ -38,12 +47,17 @@ const summaryResults = document.querySelector("#summaryResults");
 const seedButton = document.querySelector("#seedButton");
 const resetWeekButton = document.querySelector("#resetWeekButton");
 const deleteEventButton = document.querySelector("#deleteEventButton");
+const signInButton = document.querySelector("#signInButton");
+const signOutButton = document.querySelector("#signOutButton");
+const authMessage = document.querySelector("#authMessage");
+const authUser = document.querySelector("#authUser");
 
 const state = {
   events: {},
   currentEventId: "",
   friends: {},
   attendance: {},
+  user: null,
   selectedWeekStart: "",
   weekOptions: [],
   summaryWeekStarts: [],
@@ -52,6 +66,9 @@ const state = {
 
 let db = null;
 let rootData = {};
+let firebaseApp = null;
+let auth = null;
+let unsubscribePlanner = null;
 
 function slugifyEventName(name) {
   return name
@@ -129,6 +146,33 @@ function sanitizeText(value) {
 function setStatus(message, connected = false) {
   syncStatus.textContent = message;
   statusPanel.classList.toggle("connected", connected);
+}
+
+function renderAuthState() {
+  const isSignedIn = Boolean(state.user);
+  pageShell.classList.toggle("auth-required", !isSignedIn);
+  signInButton.hidden = isSignedIn;
+  signOutButton.hidden = !isSignedIn;
+  authUser.textContent = isSignedIn ? state.user.email || "Signed in" : "Not signed in";
+  authMessage.textContent = isSignedIn
+    ? "Signed in with Google. Your database can now be protected with authenticated-only rules."
+    : "Sign in with Google to view and edit the planner. This keeps the database off the public internet.";
+}
+
+function resetAppState() {
+  rootData = {};
+  state.events = {};
+  state.currentEventId = "";
+  state.friends = {};
+  state.attendance = createInitialAttendance();
+  state.summaryGenerated = false;
+}
+
+function stopPlannerSubscription() {
+  if (unsubscribePlanner) {
+    unsubscribePlanner();
+    unsubscribePlanner = null;
+  }
 }
 
 function renderEventSelect() {
@@ -349,6 +393,7 @@ function renderPlanner() {
 function render() {
   const weekDates = getSelectedWeekDates();
   weekRange.textContent = formatWeekLabel(weekDates);
+  renderAuthState();
   renderEventSelect();
   renderWeekSelect();
   renderSummaryWeekSelect();
@@ -589,22 +634,46 @@ function bindEvents() {
       await deleteCurrentEvent();
     }
   });
+
+  signInButton.addEventListener("click", async () => {
+    if (!auth) {
+      return;
+    }
+
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      if (
+        error?.code === "auth/popup-blocked" ||
+        error?.code === "auth/cancelled-popup-request" ||
+        error?.code === "auth/operation-not-supported-in-this-environment"
+      ) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+
+      console.error(error);
+      setStatus("Google sign-in failed. Check that Google Auth is enabled in Firebase.");
+    }
+  });
+
+  signOutButton.addEventListener("click", async () => {
+    if (auth) {
+      await signOut(auth);
+    }
+  });
 }
 
-async function loadFirebase() {
-  state.weekOptions = createWeekOptions();
-  state.selectedWeekStart = state.weekOptions[0]?.key || dayKey(getStartOfWeek());
-  state.summaryWeekStarts = state.weekOptions.slice(0, 1).map((option) => option.key);
-  render();
+function startPlannerSubscription() {
+  const plannerRef = ref(db, "/");
 
-  try {
-    const { firebaseConfig } = await import("./firebase-config.js");
-
-    const app = initializeApp(firebaseConfig);
-    db = getDatabase(app);
-    const plannerRef = ref(db, "/");
-
-    onValue(plannerRef, (snapshot) => {
+  stopPlannerSubscription();
+  unsubscribePlanner = onValue(
+    plannerRef,
+    (snapshot) => {
       const data = snapshot.val() || {};
       rootData = data;
 
@@ -617,9 +686,42 @@ async function loadFirebase() {
 
       syncCurrentEventState(data);
       render();
-    });
+    },
+    (error) => {
+      console.error(error);
+      setStatus("Signed in, but the database rules denied access. Update Firebase rules to allow authenticated users.");
+    }
+  );
+}
 
-    setStatus("Connected. Everyone on the same Firebase project can view and edit live.", true);
+async function loadFirebase() {
+  state.weekOptions = createWeekOptions();
+  state.selectedWeekStart = state.weekOptions[0]?.key || dayKey(getStartOfWeek());
+  state.summaryWeekStarts = state.weekOptions.slice(0, 1).map((option) => option.key);
+  render();
+
+  try {
+    const { firebaseConfig } = await import("./firebase-config.js");
+
+    firebaseApp = initializeApp(firebaseConfig);
+    db = getDatabase(firebaseApp);
+    auth = getAuth(firebaseApp);
+
+    onAuthStateChanged(auth, (user) => {
+      state.user = user;
+
+      if (!user) {
+        stopPlannerSubscription();
+        resetAppState();
+        render();
+        setStatus("Sign in with Google to open the planner securely.");
+        return;
+      }
+
+      render();
+      setStatus(`Signed in as ${user.email || "your Google account"}. Loading live data...`, true);
+      startPlannerSubscription();
+    });
   } catch (error) {
     console.error(error);
     state.attendance = createInitialAttendance();
