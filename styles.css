@@ -51,10 +51,11 @@ input {
 
 .hero-card {
   display: grid;
-  gap: 24px;
-  grid-template-columns: 1.7fr 1fr;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 370px);
   padding: 28px;
   border-radius: var(--radius-xl);
+  align-items: start;
 }
 
 .eyebrow,
@@ -114,12 +115,18 @@ h2 {
   display: grid;
   gap: 20px;
   margin-top: 20px;
-  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   align-items: start;
 }
 
 .auth-panel {
   margin-top: 20px;
+}
+
+.auth-panel .panel-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  align-items: center;
 }
 
 .auth-actions {
@@ -135,9 +142,7 @@ h2 {
 }
 
 .page-shell.auth-required .layout-grid {
-  opacity: 0.42;
   pointer-events: none;
-  filter: saturate(0.8);
 }
 
 .sidebar-stack,
@@ -191,6 +196,15 @@ h2 {
 
 .summary-actions {
   align-items: end;
+}
+
+.controls-panel,
+.planner-panel,
+.summary-panel,
+.status-panel,
+.auth-panel,
+.hero-card {
+  overflow: hidden;
 }
 
 .summary-results {
@@ -431,6 +445,10 @@ h2 {
   .status-panel {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .auth-panel .panel-heading {
+    grid-template-columns: 1fr;
   }
 
   .auth-actions {
