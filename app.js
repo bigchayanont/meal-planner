@@ -3,6 +3,7 @@ import {
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
+  getRedirectResult,
   signInWithPopup,
   signInWithRedirect,
   signOut
@@ -69,6 +70,11 @@ let rootData = {};
 let firebaseApp = null;
 let auth = null;
 let unsubscribePlanner = null;
+
+function shouldUseRedirectAuth() {
+  const userAgent = navigator.userAgent || "";
+  return /iPhone|iPad|iPod|Android/i.test(userAgent);
+}
 
 function slugifyEventName(name) {
   return name
@@ -644,10 +650,16 @@ function bindEvents() {
     provider.setCustomParameters({ prompt: "select_account" });
 
     try {
+      if (shouldUseRedirectAuth()) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+
       await signInWithPopup(auth, provider);
     } catch (error) {
       if (
         error?.code === "auth/popup-blocked" ||
+        error?.code === "auth/popup-closed-by-user" ||
         error?.code === "auth/cancelled-popup-request" ||
         error?.code === "auth/operation-not-supported-in-this-environment"
       ) {
@@ -656,7 +668,7 @@ function bindEvents() {
       }
 
       console.error(error);
-      setStatus("Google sign-in failed. Check that Google Auth is enabled in Firebase.");
+      setStatus("Google sign-in failed. Check Google Auth, authorized domains, and popup settings in Firebase.");
     }
   });
 
@@ -706,6 +718,13 @@ async function loadFirebase() {
     firebaseApp = initializeApp(firebaseConfig);
     db = getDatabase(firebaseApp);
     auth = getAuth(firebaseApp);
+
+    try {
+      await getRedirectResult(auth);
+    } catch (error) {
+      console.error(error);
+      setStatus("Google sign-in redirect failed. Check Google Auth and authorized domains in Firebase.");
+    }
 
     onAuthStateChanged(auth, (user) => {
       state.user = user;
