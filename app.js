@@ -1,14 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  getRedirectResult,
-  signInWithPopup,
-  signInWithRedirect,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
   getDatabase,
   onValue,
   push,
@@ -30,7 +21,6 @@ const MEALS = ["Lunch", "Dinner"];
 const DAYS = 7;
 const plannerGrid = document.querySelector("#plannerGrid");
 const friendsList = document.querySelector("#friendsList");
-const pageShell = document.querySelector("#pageShell");
 const friendForm = document.querySelector("#friendForm");
 const eventForm = document.querySelector("#eventForm");
 const eventSelect = document.querySelector("#eventSelect");
@@ -48,17 +38,12 @@ const summaryResults = document.querySelector("#summaryResults");
 const seedButton = document.querySelector("#seedButton");
 const resetWeekButton = document.querySelector("#resetWeekButton");
 const deleteEventButton = document.querySelector("#deleteEventButton");
-const signInButton = document.querySelector("#signInButton");
-const signOutButton = document.querySelector("#signOutButton");
-const authMessage = document.querySelector("#authMessage");
-const authUser = document.querySelector("#authUser");
 
 const state = {
   events: {},
   currentEventId: "",
   friends: {},
   attendance: {},
-  user: null,
   selectedWeekStart: "",
   weekOptions: [],
   summaryWeekStarts: [],
@@ -67,14 +52,6 @@ const state = {
 
 let db = null;
 let rootData = {};
-let firebaseApp = null;
-let auth = null;
-let unsubscribePlanner = null;
-
-function shouldUseRedirectAuth() {
-  const userAgent = navigator.userAgent || "";
-  return /iPhone|iPad|iPod|Android/i.test(userAgent);
-}
 
 function slugifyEventName(name) {
   return name
@@ -154,17 +131,6 @@ function setStatus(message, connected = false) {
   statusPanel.classList.toggle("connected", connected);
 }
 
-function renderAuthState() {
-  const isSignedIn = Boolean(state.user);
-  pageShell.classList.toggle("auth-required", !isSignedIn);
-  signInButton.hidden = isSignedIn;
-  signOutButton.hidden = !isSignedIn;
-  authUser.textContent = isSignedIn ? state.user.email || "Signed in" : "Not signed in";
-  authMessage.textContent = isSignedIn
-    ? "Signed in with Google. Your database can now be protected with authenticated-only rules."
-    : "Sign in with Google to view and edit the planner. This keeps the database off the public internet.";
-}
-
 function resetAppState() {
   rootData = {};
   state.events = {};
@@ -172,13 +138,6 @@ function resetAppState() {
   state.friends = {};
   state.attendance = createInitialAttendance();
   state.summaryGenerated = false;
-}
-
-function stopPlannerSubscription() {
-  if (unsubscribePlanner) {
-    unsubscribePlanner();
-    unsubscribePlanner = null;
-  }
 }
 
 function renderEventSelect() {
@@ -399,7 +358,6 @@ function renderPlanner() {
 function render() {
   const weekDates = getSelectedWeekDates();
   weekRange.textContent = formatWeekLabel(weekDates);
-  renderAuthState();
   renderEventSelect();
   renderWeekSelect();
   renderSummaryWeekSelect();
@@ -640,50 +598,11 @@ function bindEvents() {
       await deleteCurrentEvent();
     }
   });
-
-  signInButton.addEventListener("click", async () => {
-    if (!auth) {
-      return;
-    }
-
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-
-    try {
-      if (shouldUseRedirectAuth()) {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      if (
-        error?.code === "auth/popup-blocked" ||
-        error?.code === "auth/popup-closed-by-user" ||
-        error?.code === "auth/cancelled-popup-request" ||
-        error?.code === "auth/operation-not-supported-in-this-environment"
-      ) {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-
-      console.error(error);
-      setStatus("Google sign-in failed. Check Google Auth, authorized domains, and popup settings in Firebase.");
-    }
-  });
-
-  signOutButton.addEventListener("click", async () => {
-    if (auth) {
-      await signOut(auth);
-    }
-  });
 }
 
 function startPlannerSubscription() {
   const plannerRef = ref(db, "/");
-
-  stopPlannerSubscription();
-  unsubscribePlanner = onValue(
+  onValue(
     plannerRef,
     (snapshot) => {
       const data = snapshot.val() || {};
@@ -701,7 +620,7 @@ function startPlannerSubscription() {
     },
     (error) => {
       console.error(error);
-      setStatus("Signed in, but the database rules denied access. Update Firebase rules to allow authenticated users.");
+      setStatus("Database access failed. If you removed sign-in, Firebase rules may still require authentication.");
     }
   );
 }
@@ -715,32 +634,12 @@ async function loadFirebase() {
   try {
     const { firebaseConfig } = await import("./firebase-config.js");
 
-    firebaseApp = initializeApp(firebaseConfig);
-    db = getDatabase(firebaseApp);
-    auth = getAuth(firebaseApp);
-
-    try {
-      await getRedirectResult(auth);
-    } catch (error) {
-      console.error(error);
-      setStatus("Google sign-in redirect failed. Check Google Auth and authorized domains in Firebase.");
-    }
-
-    onAuthStateChanged(auth, (user) => {
-      state.user = user;
-
-      if (!user) {
-        stopPlannerSubscription();
-        resetAppState();
-        render();
-        setStatus("Sign in with Google to open the planner securely.");
-        return;
-      }
-
-      render();
-      setStatus(`Signed in as ${user.email || "your Google account"}. Loading live data...`, true);
-      startPlannerSubscription();
-    });
+    const app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+    resetAppState();
+    render();
+    setStatus("Connected. Everyone on the same Firebase project can view and edit live.", true);
+    startPlannerSubscription();
   } catch (error) {
     console.error(error);
     state.attendance = createInitialAttendance();

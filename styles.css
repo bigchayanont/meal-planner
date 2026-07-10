@@ -119,32 +119,6 @@ h2 {
   align-items: start;
 }
 
-.auth-panel {
-  margin-top: 20px;
-}
-
-.auth-panel .panel-heading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  align-items: center;
-}
-
-.auth-actions {
-  display: grid;
-  gap: 10px;
-  justify-items: end;
-  min-width: 260px;
-}
-
-.auth-user {
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
-.page-shell.auth-required .layout-grid {
-  pointer-events: none;
-}
-
 .sidebar-stack,
 .main-stack {
   display: grid;
@@ -202,7 +176,6 @@ h2 {
 .planner-panel,
 .summary-panel,
 .status-panel,
-.auth-panel,
 .hero-card {
   overflow: hidden;
 }
@@ -447,15 +420,6 @@ h2 {
     display: grid;
   }
 
-  .auth-panel .panel-heading {
-    grid-template-columns: 1fr;
-  }
-
-  .auth-actions {
-    justify-items: stretch;
-    min-width: 0;
-  }
-
   .layout-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -484,8 +448,7 @@ h2 {
   }
 
   .planner-actions,
-  .week-picker,
-  .auth-actions {
+  .week-picker {
     width: 100%;
   }
 
